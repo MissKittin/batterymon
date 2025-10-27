@@ -1,0 +1,2 @@
+batterymon ALL=(ALL) !ALL
+batterymon ALL=NOPASSWD: /usr/local/share/batterymon/batterymon-fsck.py

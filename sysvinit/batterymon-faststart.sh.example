@@ -1,0 +1,55 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          batterymon-faststart
+# Required-Start:
+# Required-Stop:
+# Should-Start:      mountkernfs
+# Default-Start:     S
+# Default-Stop:      0 6
+# X-Start-Before:    udev
+# Short-Description: batterymon fast start
+### END INIT INFO
+
+BATTERYMON_SYSV="$(readlink -f "${0}")"
+PATH='/sbin:/bin:/usr/sbin:/usr/bin'
+
+. '/lib/lsb/init-functions'
+
+GPIO_LED='27'
+GPIO_LED_B='23'
+
+prepare_batterymon()
+{
+	#echo 'batterymon: preparing' > '/dev/kmsg' # debug
+
+	mount '/tmp'
+
+	# turn on the LEDs
+	for gpio in ${GPIO_LED} ${GPIO_LED_B}; do
+		[ ! -e "/sys/class/gpio/gpio${gpio}" ] && echo "${gpio}" > '/sys/class/gpio/export'
+		echo 'out' > "/sys/class/gpio/gpio${gpio}/direction"
+		echo '1' > "/sys/class/gpio/gpio${gpio}/value"
+	done
+
+	# Raspberry Pi Bluetooth
+	modprobe 'hci_uart'
+	[ -e '/dev/ttyAMA0' ] && ln -s 'ttyAMA0' '/dev/serial1'
+	'/usr/bin/btuart'
+
+	'/etc/init.d/dbus' 'start'
+	'/etc/init.d/bluetooth' 'start'
+
+	#echo 'batterymon: I am starting' > '/dev/kmsg' # debug
+}
+
+[ -e '/var/run/.batterymon-prepared' ] || case "$1" in
+	'start')
+		log_action_msg_pre; echo 'Preparing batterymon: batterymon-faststart'
+		prepare_batterymon
+		echo -n '' > '/var/run/.batterymon-prepared'
+	;;
+esac
+
+exec "${BATTERYMON_SYSV%/*}/batterymon-restart.sh" ${@}
+
+exit 0

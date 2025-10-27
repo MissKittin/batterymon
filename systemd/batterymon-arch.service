@@ -1,0 +1,19 @@
+[Unit]
+Description=batterymon-arch
+After=network.target
+
+[Service]
+Type=simple
+User=batterymon
+Group=batterymon
+ExecStartPre=/bin/mkdir -p /tmp/.batterymon-pyc
+ExecStartPre=/bin/chown batterymon:batterymon /tmp/.batterymon-pyc
+ExecStartPre=/bin/chmod 700 /tmp/.batterymon-pyc
+ExecStart=/usr/local/share/batterymon/batterymon-arch.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPYCACHEPREFIX=/tmp/.batterymon-pyc
+
+[Install]
+WantedBy=multi-user.target
