@@ -63,6 +63,12 @@ LOG_PARAMS=[ # batterymon.py
     "FET",
     "ExternalTemperature" # custom log param (can be anywhere in the array)
 ]
+LOG_PARAMS_IGNORE={ # batterymon.py
+    # if you do not want to log some parameters
+    # from LOG_PARAMS for specific devices, add them here
+
+    "bt:01:23:45:67:89:AB": ["Temps", "Balance"]
+}
 CUSTOM_LOG_PARAMS={ # batterymon.py
     # here you define callbacks for external parameters
     # it's important that the dict value is callable

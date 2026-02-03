@@ -57,6 +57,9 @@ while True:
                     json_data_f.write(json_data)
 
             for param in batterymon_common.LOG_PARAMS:
+                if param in batterymon_common.LOG_PARAMS_IGNORE.get(device, []):
+                    continue
+
                 if param in batterymon_common.CUSTOM_LOG_PARAMS:
                     output_line+=" "+str(batterymon_common.CUSTOM_LOG_PARAMS[param](param, d.get(param, None)))
                     continue

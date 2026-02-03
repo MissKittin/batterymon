@@ -56,6 +56,7 @@ UUID=0011-22BB /media/batterymon-backup vfat noauto,user,nosuid,nodev,noexec,noa
 
 Link the ready sudo config from the repository (must be in `/usr/local/share/batterymon`):
 ```
+chmod 440 /usr/local/share/batterymon/sudoers.d/batterymon
 ln -s /usr/local/share/batterymon/sudoers.d/batterymon /etc/sudoers.d/batterymon
 ```
 or add this entry to `/etc/sudoers.d/batterymon` (where the repository is located in `/usr/local/share/batterymon`):
