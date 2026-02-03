@@ -75,6 +75,7 @@ CUSTOM_LOG_PARAMS={ # batterymon.py
 WORK_DIR="/tmp/.batterymon"
 CURRENT_OUT=WORK_DIR+"/pending.txt"
 BACKUP_OUT=WORK_DIR+"/pending-tmp.txt" # batterymon.py, writes to this file during log rotation
+DUMP_RAW_JSON=False # batterymon.py, dumps the read json to CURRENT_OUT+"-"+device
 LOCK_FILE=WORK_DIR+"/arch.lock" # created by batterymon-arch.py
 READ_LOCK_FILE=WORK_DIR+"/bmsread.lock" # if you create this file, you will block reading data from BMS in batterymon.py
 ARCH_LOG=WORK_DIR+"/arch-log.txt" # batterymon-arch.py

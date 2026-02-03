@@ -160,6 +160,9 @@ def sha512sum(file_path): # formerly used in batterymon-arch.py - now a free bir
 
     return hasher.hexdigest()
 
+def sanitize_filename(filename, placeholder="_"): # batterymon.py
+    return re.sub(r'[\\/:*?"<>|]', placeholder, filename)
+
 # imports
 def common():
     global _batterymon_common

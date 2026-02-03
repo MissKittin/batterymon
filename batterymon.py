@@ -5,7 +5,9 @@ import shutil
 import json
 import time
 from datetime import datetime
-from lib import batterymon_common
+from lib import batterymon_helpers
+
+batterymon_common=batterymon_helpers.common()
 
 if os.getenv("BATTERYMON_DEBUG", "").lower() == "true":
     import sys
@@ -49,6 +51,10 @@ while True:
             json_data=batterymon_common.get_bms_json_data(device)
             d=json.loads(json_data.decode("utf-8"))
             output_line="OK "+device
+
+            if batterymon_common.DUMP_RAW_JSON:
+                with open(batterymon_common.CURRENT_OUT+"-"+batterymon_helpers.sanitize_filename(device), "wb") as json_data_f:
+                    json_data_f.write(json_data)
 
             for param in batterymon_common.LOG_PARAMS:
                 if param in batterymon_common.CUSTOM_LOG_PARAMS:
