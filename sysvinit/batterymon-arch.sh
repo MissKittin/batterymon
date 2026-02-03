@@ -4,7 +4,7 @@
 # Required-Start:    batterymon
 # Required-Stop:
 # Default-Start:     2 3 4 5
-# Default-Stop:
+# Default-Stop:      0 1 6
 # Short-Description: batterymon-arch
 ### END INIT INFO
 
@@ -27,7 +27,7 @@ case "$1" in
 		if [ ! -e '/tmp/.batterymon-pyc' ]; then
 			mkdir '/tmp/.batterymon-pyc'
 			chown "${USER}:${GROUP}" '/tmp/.batterymon-pyc'
-			chown 700 '/tmp/.batterymon-pyc'
+			chmod 700 '/tmp/.batterymon-pyc'
 		fi
 
 		start-stop-daemon --start --quiet --background --chuid $USER:$GROUP --make-pidfile --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS && log_end_msg 0 || log_end_msg 1

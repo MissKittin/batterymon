@@ -4,7 +4,7 @@
 # Required-Start:
 # Required-Stop:
 # Default-Start:     2 3 4 5
-# Default-Stop:
+# Default-Stop:      0 1 6
 # Short-Description: batterymon-restart
 ### END INIT INFO
 
