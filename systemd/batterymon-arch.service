@@ -7,7 +7,6 @@ Type=simple
 User=batterymon
 Group=batterymon
 ExecStartPre=/bin/mkdir -p /tmp/.batterymon-pyc
-ExecStartPre=/bin/chown batterymon:batterymon /tmp/.batterymon-pyc
 ExecStartPre=/bin/chmod 700 /tmp/.batterymon-pyc
 ExecStart=/usr/local/share/batterymon/batterymon-arch.py
 Restart=always
