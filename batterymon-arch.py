@@ -8,7 +8,7 @@ from datetime import datetime
 from lib import batterymon_helpers
 
 def write_log(message, error=False):
-    file=batterymon_common.ARCH_DIR+"/"+batterymon_common.ARCH_LOG
+    file=batterymon_common.ARCH_LOG
 
     if error:
         file=batterymon_common.ARCH_ERR
