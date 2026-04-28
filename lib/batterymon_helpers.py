@@ -197,14 +197,14 @@ def gpio(callback=None):
 
     try:
         gpio=importlib.import_module(
-            ".batterymon_gpio_"+common().GPIO_DRIVER,
+            ".batterymon_gpio_drv_"+common().GPIO_DRIVER,
             package=__package__
         )
     except(ImportError):
         if not callback is None:
             callback()
 
-        from . import batterymon_gpio_dummy as gpio
+        from . import batterymon_gpio_drv_dummy as gpio
 
     _batterymon_gpio=gpio
 

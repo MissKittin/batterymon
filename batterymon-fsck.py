@@ -101,7 +101,7 @@ try:
 
     write_log("=== FSCK END ===")
     sys.exit(process.wait())
-except Exception as e:
+except(Exception) as e:
     write_log("WRAPPER EXCEPTION: "+str(e))
     write_log("=== FSCK FAILED ===")
 
