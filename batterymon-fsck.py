@@ -3,7 +3,7 @@
 import subprocess
 import sys
 from datetime import datetime
-from lib import batterymon_common
+from batterymon_lib import batterymon_common
 
 def fstab():
     fstab_entries={}

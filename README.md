@@ -34,7 +34,7 @@ Tested on Raspberry Pi Zero W and AZO Digital LP12-150 LiFePO4 12V 150Ah
 * entry in `/etc/sudoers` allowing `batterymon-fsck.py` with the `NOPASSWD` option
 
 ### Setup
-Open the `lib` directory. You can configure the program in two ways:  
+Open the `batterymon_lib` directory. You can configure the program in two ways:  
 you can patch the `batterymon_common_example.py` - you gain the ability to update the code that you will not edit.  
 Create a file `batterymon_common.py` and enter the settings you want to change into it, e.g.:
 ```

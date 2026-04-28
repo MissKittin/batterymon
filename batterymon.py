@@ -4,7 +4,7 @@ import os
 import shutil
 import time
 from datetime import datetime
-from lib import batterymon_helpers
+from batterymon_lib import batterymon_helpers
 
 batterymon_common=batterymon_helpers.common()
 

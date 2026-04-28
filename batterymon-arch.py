@@ -5,7 +5,7 @@ import os
 import sys
 import signal
 from datetime import datetime
-from lib import batterymon_helpers
+from batterymon_lib import batterymon_helpers
 
 def write_log(message, error=False):
     file=batterymon_common.ARCH_LOG
