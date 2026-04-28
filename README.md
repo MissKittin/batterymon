@@ -34,7 +34,56 @@ Tested on Raspberry Pi Zero W and AZO Digital LP12-150 LiFePO4 12V 150Ah
 * entry in `/etc/sudoers` allowing `batterymon-fsck.py` with the `NOPASSWD` option
 
 ### Setup
-Open the `lib` directory, rename `batterymon_common.py.example` to `batterymon_common.py` and edit this file.  
+Open the `lib` directory. You can configure the program in two ways:  
+you can patch the `batterymon_common_example.py` - you gain the ability to update the code that you will not edit.  
+Create a file `batterymon_common.py` and enter the settings you want to change into it, e.g.:
+```
+# import sample configuration
+from .batterymon_common_example import *
+
+# settings - your own CUSTOM_LOG_PARAMS
+def _custom_log_params(name, value):
+    if name == "ExternalTemperature":
+        return 22
+
+    return "_custom_log_params_NA_"
+
+# enter your own settings
+DEVICES=[
+    "bt:00:11:22:33:44:55",
+    "bt:01:23:45:67:89:AB"
+]
+LOG_PARAMS_IGNORE={}
+CUSTOM_LOG_PARAMS={
+    "ExternalTemperature": _custom_log_params
+}
+
+# overwrite function
+def on_read_lock():
+	# do something
+
+# wrap function
+_original_umount_arch=umount_arch
+def umount_arch(do_rsync=True):
+    process_result=_original_umount_arch(do_rsync)
+
+    if process_result == 0:
+        # do something if unmounting was successful
+
+    return process_result
+
+# replace internal function
+def _do_rsync():
+    from . import batterymon_common_example as _example
+
+    def _do_rsync():
+        # function body
+
+    _example._do_rsync=_do_rsync
+_do_rsync()
+```
+or method 2: rename `batterymon_common_example.py` to `batterymon_common.py` and edit this file.
+
 Create user `batterymon`:
 ```
 useradd --no-create-home --shell /usr/sbin/nologin batterymon && passwd -l batterymon
