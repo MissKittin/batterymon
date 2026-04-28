@@ -103,8 +103,12 @@ def archive_file(type):
         with open(moved_file_path+".sha512", "w") as f_checksum:
             f_checksum.write(moved_file_checksum)
 
-    # compress ARCH_LOG
-    batterymon_helpers.gzip_file_if_big(batterymon_common.ARCH_DIR+"/"+arch_log_basename)
+    # append and compress rotated ARCH_LOG
+    batterymon_helpers.merge_file(
+        batterymon_common.ARCH_LOG,
+        batterymon_common.ARCH_LOG_DIR+"/"+arch_log_basename
+    )
+    batterymon_helpers.gzip_file_if_big(batterymon_common.ARCH_LOG_DIR+"/"+arch_log_basename)
 
     # append and compress rotated ARCH_ERR
     batterymon_helpers.merge_file(
