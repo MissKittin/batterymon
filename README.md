@@ -122,7 +122,6 @@ You can also programmatically press the GPIO button by creating an empty `/tmp/.
 The format of the `/tmp/.batterymon/pending.txt` file looks like this:
 ```
 YYYY-mm-dd HH:MM:SS OK bt:device-mac,desc data read in order from the LOG_PARAMS table
-YYYY-mm-dd HH:MM:SS VE bt:device-mac,desc ValueError message
 YYYY-mm-dd HH:MM:SS EX bt:device-mac,desc Exception message
 YYYY-mm-dd HH:MM:SS RL
 ```

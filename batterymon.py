@@ -2,7 +2,6 @@
 
 import os
 import shutil
-import json
 import time
 from datetime import datetime
 from lib import batterymon_helpers
@@ -49,8 +48,7 @@ while True:
 
     for device in batterymon_common.DEVICES:
         try:
-            json_data=batterymon_common.get_bms_json_data(device)
-            d=json.loads(json_data.decode("utf-8"))
+            d, json_data=batterymon_common.get_bms_json_data(device)
             output_line="OK "+device
 
             if batterymon_common.DUMP_RAW_JSON:
@@ -74,18 +72,6 @@ while True:
             write_log(current_out, output_line)
             print_debug(".")
             batterymon_common.post_log(device, d)
-        except(ValueError) as e:
-            json_data_raw="<no data>"
-
-            if 'json_data' in locals():
-                json_data_raw=json_data.strip()
-
-            write_log(current_out, ""
-            +   "VE "+device+" "+str(e)+" | "
-            +   json_data_raw
-            )
-
-            print_debug("e")
         except(Exception) as e:
             write_log(current_out, ""
             +   "EX "+device+" "+str(e)
