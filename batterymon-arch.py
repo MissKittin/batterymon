@@ -13,8 +13,12 @@ def write_log(message, error=False):
     if error:
         file=batterymon_common.ARCH_ERR
 
-    with open(file, "a") as f:
-        f.write(datetime.today().strftime("%Y-%m-%d %H:%M:%S")+" "+message+"\n")
+    try:
+        with open(file, "a") as f:
+            f.write(datetime.today().strftime("%Y-%m-%d %H:%M:%S")+" "+message+"\n")
+    except(Exception) as e:
+        sys.stderr.write("write_log: cannot write to "+file+" | "+str(e))
+        sys.stderr.flush()
 
 batterymon_common=batterymon_helpers.common()
 batterymon_gpio=batterymon_helpers.gpio(lambda: write_log("Warning: The batterymon_gpio_dummy driver is used!", True))
@@ -104,18 +108,22 @@ def archive_file(type):
             f_checksum.write(moved_file_checksum)
 
     # append and compress rotated ARCH_LOG
-    batterymon_helpers.merge_file(
+    if batterymon_helpers.merge_file(
         batterymon_common.ARCH_LOG,
         batterymon_common.ARCH_LOG_DIR+"/"+arch_log_basename
-    )
-    batterymon_helpers.gzip_file_if_big(batterymon_common.ARCH_LOG_DIR+"/"+arch_log_basename)
+    ) is False:
+        write_log("Cannot merge_file "+batterymon_common.ARCH_LOG+" to "+batterymon_common.ARCH_LOG_DIR+"/"+arch_log_basename, True)
+    if batterymon_helpers.gzip_file_if_big(batterymon_common.ARCH_LOG_DIR+"/"+arch_log_basename) is False:
+        write_log("Cannot gzip_file_if_big "+batterymon_common.ARCH_LOG_DIR+"/"+arch_log_basename, True)
 
     # append and compress rotated ARCH_ERR
-    batterymon_helpers.merge_file(
+    if batterymon_helpers.merge_file(
         batterymon_common.ARCH_ERR,
         batterymon_common.ARCH_LOG_DIR+"/"+arch_err_basename
-    )
-    batterymon_helpers.gzip_file_if_big(batterymon_common.ARCH_LOG_DIR+"/"+arch_err_basename)
+    ) is False:
+        write_log("Cannot merge_file "+batterymon_common.ARCH_ERR+" to "+batterymon_common.ARCH_LOG_DIR+"/"+arch_err_basename, True)
+    if batterymon_helpers.gzip_file_if_big(batterymon_common.ARCH_LOG_DIR+"/"+arch_err_basename) is False:
+        write_log("Cannot gzip_file_if_big "+batterymon_common.ARCH_LOG_DIR+"/"+arch_err_basename, True)
 
     if batterymon_common.umount_arch() != 0:
         write_log("Cannot umount archive disk", True)

@@ -9,27 +9,36 @@ def merge_file(src, dest): # batterymon_common.mount_arch() and batterymon-arch.
     if not os.path.exists(src):
         return
 
-    with open(dest, "a") as f_dest:
-        with open(src, "r") as f_src:
-            f_dest.write(f_src.read())
+    try:
+        with open(dest, "a") as f_dest:
+            with open(src, "r") as f_src:
+                f_dest.write(f_src.read())
 
-    os.remove(src)
+        os.remove(src)
+    except(Exception):
+        return False
+
+    return True
 
 def gzip_file_if_big(file): # batterymon_common.mount_arch() and batterymon-arch.py
     if not os.path.exists(file):
         return
 
-    if os.path.getsize(file) < common().ARCH_LOG_MAX_SIZE:
-        return
+    try:
+        if os.path.getsize(file) < common().ARCH_LOG_MAX_SIZE:
+            return
 
-    base, ext=os.path.splitext(file)
-    current_date=datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
+        base, ext=os.path.splitext(file)
+        current_date=datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
 
-    shutil.move(
-        file,
-        base+"_"+current_date+ext
-    )
-    gzip_file(file+"_"+current_date)
+        shutil.move(
+            file,
+            base+"_"+current_date+ext
+        )
+
+        gzip_file(file+"_"+current_date)
+    except(Exception):
+        return False
 
 def gzip_file(file, compress_level=8): # gzip_file_if_big()
     try:
@@ -37,7 +46,7 @@ def gzip_file(file, compress_level=8): # gzip_file_if_big()
             f_out.writelines(f_in)
 
         os.remove(file)
-    except Exception as e:
+    except(Exception):
         if os.path.exists(file+".gz"):
             os.remove(file+".gz")
 
@@ -67,7 +76,7 @@ def gzip_file_move(src, dest, compress_level=8, chunk_size=524288): # batterymon
 
             f_out.flush()
             os.fsync(f_out.fileno())
-    except Exception as e:
+    except(Exception):
         if os.path.exists(dest):
             os.remove(dest)
 
@@ -80,7 +89,7 @@ def gzip_file_move(src, dest, compress_level=8, chunk_size=524288): # batterymon
         with open(dest, 'rb') as f:
             for chunk in iter(lambda: f.read(chunk_size), b''):
                 dest_hasher.update(chunk)
-    except Exception as e:
+    except(Exception):
         if os.path.exists(dest):
             os.remove(dest)
 
@@ -101,7 +110,7 @@ def gzip_file_move_old(src, dest, compress_level=8): # formerly used in batterym
             f_out.writelines(f_in)
 
         os.remove(src)
-    except Exception as e:
+    except(Exception):
         if os.path.exists(dest):
             os.remove(dest)
 
@@ -154,9 +163,12 @@ def parse_log_line(line): # batterymon_common._check_battery_voltage()
 def sha512sum(file_path): # formerly used in batterymon-arch.py - now a free bird
     hasher=hashlib.sha512()
 
-    with open(file_path, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b''):
-            hasher.update(chunk)
+    try:
+        with open(file_path, 'rb') as f:
+            for chunk in iter(lambda: f.read(4096), b''):
+                hasher.update(chunk)
+    except(Exception):
+        return None
 
     return hasher.hexdigest()
 
@@ -188,7 +200,7 @@ def gpio(callback=None):
                 from . import batterymon_gpio_rpi as gpio
             case _:
                 from . import batterymon_gpio_dummy as gpio
-    except ImportError:
+    except(ImportError):
         if not callback is None:
             callback()
 
