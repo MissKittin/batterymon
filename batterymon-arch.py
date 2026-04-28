@@ -23,21 +23,12 @@ def write_log(message, error=False):
 batterymon_common=batterymon_helpers.common()
 batterymon_gpio=batterymon_helpers.gpio(lambda: write_log("Warning: The batterymon_gpio_dummy driver is used!", True))
 
-if os.getenv("BATTERYMON_DEBUG", "").lower() == "true":
-    def print_debug(c):
-        sys.stdout.write(c)
-        sys.stdout.flush()
-else:
-    def print_debug(c):
-        return
-
 def archive_file(type):
     global arch_retry
 
     if batterymon_common.block_archive(type):
         write_log("Archiving is blocked - batterymon_common.block_archive() returned True", True)
         batterymon_gpio.led_err()
-        print_debug("B")
 
         if type != "Manual":
             arch_retry=True
@@ -49,7 +40,6 @@ def archive_file(type):
 
     if not os.path.exists(batterymon_common.CURRENT_OUT):
         write_log(type+" archive: "+batterymon_common.CURRENT_OUT+" does not exist", True)
-        print_debug("e")
         time.sleep(1)
         batterymon_gpio.led(False)
 
@@ -57,7 +47,6 @@ def archive_file(type):
 
     if os.path.getsize(batterymon_common.CURRENT_OUT) == 0:
         write_log(type+" archive: "+batterymon_common.CURRENT_OUT+" is empty", True)
-        print_debug("m")
         time.sleep(1)
         batterymon_gpio.led(False)
 
@@ -68,7 +57,6 @@ def archive_file(type):
         write_log("Cannot mount archive disk", True)
         batterymon_gpio.led(False)
         batterymon_gpio.led_err(10)
-        print_debug("E")
 
         if type != "Manual":
             arch_retry=True
@@ -76,15 +64,6 @@ def archive_file(type):
         return
 
     write_log(type+" archive")
-
-    if type == "Manual":
-        print_debug("!")
-    elif type == "Triggered":
-        print_debug("T")
-    elif type == "Retry":
-        print_debug("R")
-    else:
-        print_debug(".")
 
     # LOCK START
     open(batterymon_common.LOCK_FILE, "w").close()
@@ -129,7 +108,6 @@ def archive_file(type):
         write_log("Cannot umount archive disk", True)
         batterymon_gpio.led(False)
         batterymon_gpio.led_err(3)
-        print_debug("X")
 
         return
 

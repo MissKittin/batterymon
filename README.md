@@ -178,7 +178,6 @@ YYYY-mm-dd HH:MM:SS RL
 where `RL` means "reading locked".
 
 ### Debugging
-Export the `BATTERYMON_DEBUG=true` environment variable (`export BATTERYMON_DEBUG=true`) - letters and dots will be printed on stdout.  
 For the `batterymon-arch.py` to work, create the directories `/tmp/batterymon-mnt`, `/tmp/batterymon-mnt-backup` and add to `/etc/fstab`:
 ```
 /tmp/batterymon-mnt /media/batterymon auto user,bind 0 0

@@ -8,7 +8,7 @@ import os
 from . import batterymon_common
 from . import batterymon_gpio_files
 
-if os.getenv("BATTERYMON_DEBUG", "").lower() == "true":
+if os.getenv("BATTERYMON_GPIO_DRV_DUMMY_DEBUG", "").lower() == "true":
     def print_debug(str):
         print(str)
 else:

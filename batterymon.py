@@ -8,16 +8,6 @@ from lib import batterymon_helpers
 
 batterymon_common=batterymon_helpers.common()
 
-if os.getenv("BATTERYMON_DEBUG", "").lower() == "true":
-    import sys
-
-    def print_debug(c):
-        sys.stdout.write(c)
-        sys.stdout.flush()
-else:
-    def print_debug(c):
-        return
-
 def write_log(current_out, message):
     with open(current_out, "a") as f:
         f.write(datetime.today().strftime("%Y-%m-%d %H:%M:%S")+" "+message+"\n")
@@ -30,10 +20,8 @@ while True:
     current_out=batterymon_common.CURRENT_OUT
 
     if os.path.exists(batterymon_common.LOCK_FILE):
-        print_debug("t")
         current_out=batterymon_common.BACKUP_OUT
     elif os.path.exists(batterymon_common.BACKUP_OUT):
-        print_debug("m")
         shutil.move(
             batterymon_common.BACKUP_OUT,
             current_out
@@ -70,16 +58,11 @@ while True:
                 output_line+=" "+str(d.get(param, "-1"))
 
             write_log(current_out, output_line)
-            print_debug(".")
             batterymon_common.post_log(device, d)
         except(Exception) as e:
             write_log(current_out, ""
             +   "EX "+device+" "+str(e)
             )
-
-            print_debug("x")
-
-    print_debug(" ")
 
     sleep_second=0
     while sleep_second < batterymon_common.SAVE_DATA_SECONDS:
