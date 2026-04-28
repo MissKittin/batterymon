@@ -9,3 +9,6 @@
 
 # set your own PATH variable
 #CUSTOM_PYTHON_PATH='/opt/python:/bin:/sbin:/usr/bin:/usr/sbin'
+
+# uncomment if you use BusyBox instead of sysvinit
+#BB_INIT='true'

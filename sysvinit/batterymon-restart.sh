@@ -15,10 +15,18 @@ DAEMONS="${BATTERYMON}/batterymon.sh ${BATTERYMON}/batterymon-arch.sh"
 if [ "${1}" = 'daemon' ]; then
 	LOG='/var/run/.batterymon-restart.log'
 else
+	BB_INIT='false'
+
+	[ -f "${BATTERYMON}/batterymon.rc" ] && . "${BATTERYMON}/batterymon.rc"
+
 	PIDFILE='/var/run/batterymon-restart.pid'
 	PATH='/sbin:/bin:/usr/sbin:/usr/bin'
 
-	. '/lib/lsb/init-functions'
+	if "${BB_INIT}"; then
+		. "${BATTERYMON}/busybox-init-functions.rc"
+	else
+		. '/lib/lsb/init-functions'
+	fi
 fi
 
 case "${1}" in
@@ -28,22 +36,39 @@ case "${1}" in
 		done
 
 		log_daemon_msg 'Starting batterymon-restart' 'batterymon-restart'
-		start-stop-daemon --start --quiet --background --make-pidfile --pidfile "${PIDFILE}" --exec "${BATTERYMON_SCR}" -- 'daemon' && log_end_msg 0 || log_end_msg 1
+
+		if "${0}" status > '/dev/null' 2>&1; then
+			log_end_msg 1
+			exit 1
+		fi
+
+		if start-stop-daemon -S -q -b -m -p "${PIDFILE}" -x "${BATTERYMON_SCR}" -- 'daemon'; then
+		log_end_msg 0
+			exit 0
+		else
+			exit_code=$?
+			log_end_msg "${exit_code}"
+			exit "${exit_code}"
+		fi
 	;;
 	'stop')
 		log_daemon_msg 'Stopping batterymon-restart' 'batterymon-restart'
 
-		if [ -e "${PIDFILE}" ]; then
-			if start-stop-daemon --stop --quiet --pidfile "${PIDFILE}" && rm "${PIDFILE}"; then
-				log_end_msg $?
-
-				for daemon in ${DAEMONS}; do
-					"${daemon}" stop
-				done
-			fi
-		else
+		if [ ! -e "${PIDFILE}" ]; then
 			log_end_msg 1
+			exit 1
 		fi
+
+		if start-stop-daemon -K -q -p "${PIDFILE}" && rm "${PIDFILE}"; then
+			exit_code=$?
+			log_end_msg "${exit_code}"
+
+			for daemon in ${DAEMONS}; do
+				"${daemon}" stop || exit_code=$?
+			done
+		fi
+
+		exit "${exit_code}"
 	;;
 	'status')
 		status_of_proc -p "${PIDFILE}" "${BATTERYMON_SCR}" 'batterymon-restart' && exit 0 || exit $?

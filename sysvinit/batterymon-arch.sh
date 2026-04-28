@@ -14,6 +14,7 @@ if [ ! "${1}" = 'daemon' ]; then
 	USER='batterymon'
 	GROUP='batterymon'
 	CUSTOM_PYTHON_PATH=''
+	BB_INIT='false'
 	CUSTOM_PYTHON_CACHE_PATH='/tmp/.batterymon-pyc'
 	BATTERYMON="$(readlink -f "${0}")"; BATTERYMON="${BATTERYMON%/*}/.."
 
@@ -25,12 +26,21 @@ if [ ! "${1}" = 'daemon' ]; then
 	[ ! "${CUSTOM_PYTHON_PATH}" = '' ] && DAEMON_OPTS="PATH=${CUSTOM_PYTHON_PATH} ${DAEMON_OPTS}"
 	PATH='/sbin:/bin:/usr/sbin:/usr/bin'
 
-	. '/lib/lsb/init-functions'
+	if "${BB_INIT}"; then
+		. "${BATTERYMON}/sysvinit/busybox-init-functions.rc"
+	else
+		. '/lib/lsb/init-functions'
+	fi
 fi
 
 case "${1}" in
 	'start')
 		log_daemon_msg 'Starting batterymon-arch' 'batterymon-arch'
+
+		if "${0}" status > '/dev/null' 2>&1; then
+			log_end_msg 1
+			exit 1
+		fi
 
 		if [ ! -e '/tmp/.batterymon-pyc' ]; then
 			mkdir '/tmp/.batterymon-pyc'
@@ -51,25 +61,42 @@ case "${1}" in
 				chmod 640 "${LOG}"
 			fi
 
-			start-stop-daemon --start --quiet --background --chuid "${USER}:${GROUP}" --make-pidfile --pidfile "${PIDFILE}" --exec "$(readlink -f ${0})" -- 'daemon' "${PIDFILE}.child" "${LOG}" "${DAEMON}" ${DAEMON_OPTS} && log_end_msg 0 || log_end_msg 1
+			if start-stop-daemon -S -q -b -c "${USER}:${GROUP}" -m -p "${PIDFILE}" -x "$(readlink -f ${0})" -- 'daemon' "${PIDFILE}.child" "${LOG}" "${DAEMON}" ${DAEMON_OPTS}; then
+				log_end_msg 0
+				exit 0
+			else
+				exit_code=$?
+				log_end_msg "${exit_code}"
+				exit "${exit_code}"
+			fi
 		else
-			start-stop-daemon --start --quiet --background --chuid "${USER}:${GROUP}" --make-pidfile --pidfile "${PIDFILE}" --exec "${DAEMON}" -- ${DAEMON_OPTS} && log_end_msg 0 || log_end_msg 1
+			if start-stop-daemon -S -q -b -c "${USER}:${GROUP}" -m -p "${PIDFILE}" -x "${DAEMON}" -- ${DAEMON_OPTS}; then
+				log_end_msg 0
+				exit 0
+			else
+				exit_code=$?
+				log_end_msg "${exit_code}"
+				exit "${exit_code}"
+			fi
 		fi
 	;;
 	'stop')
 		log_daemon_msg 'Stopping batterymon-arch' 'batterymon-arch'
 
-		if [ -e "${PIDFILE}" ]; then
-			start-stop-daemon --stop --quiet --pidfile "${PIDFILE}" && rm "${PIDFILE}"
-
-			if "${ENABLE_WATCHDOG}"; then
-				[ -f "${PIDFILE}.child" ] && kill -15 "$(cat "${PIDFILE}.child")" && rm "${PIDFILE}.child"
-			fi
-
-			log_end_msg $?
-		else
+		if [ ! -e "${PIDFILE}" ]; then
 			log_end_msg 1
+			exit 1
 		fi
+
+		start-stop-daemon -K -q -p "${PIDFILE}" && rm "${PIDFILE}"
+
+		if "${ENABLE_WATCHDOG}"; then
+			[ -f "${PIDFILE}.child" ] && kill -15 "$(cat "${PIDFILE}.child")" && rm "${PIDFILE}.child"
+		fi
+
+		exit_code=$?
+		log_end_msg "${exit_code}"
+		exit "${exit_code}"
 	;;
 	'status')
 		if "${ENABLE_WATCHDOG}"; then

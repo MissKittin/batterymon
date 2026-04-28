@@ -10,13 +10,19 @@
 # Short-Description: batterymon fast start
 ### END INIT INFO
 
+BB_INIT='false' # change to BB_INIT='true' if you use BusyBox
 GPIO_LED='27'
 GPIO_LED_B='23'
 
 BATTERYMON_SYSV="$(readlink -f "${0}")"
+BATTERYMON_SYSV="${BATTERYMON_SYSV%/*}"
 PATH='/sbin:/bin:/usr/sbin:/usr/bin'
 
-. '/lib/lsb/init-functions'
+if "${BB_INIT}"; then
+	. "${BATTERYMON_SYSV}/busybox-init-functions.rc"
+else
+	. '/lib/lsb/init-functions'
+fi
 
 prepare_batterymon()
 {
@@ -51,12 +57,12 @@ prepare_batterymon()
 esac
 
 # if you have set ENABLE_WATCHDOG=true in batterymon.rc, comment out the line below
-exec "${BATTERYMON_SYSV%/*}/batterymon-restart.sh" ${@}; exit 1
+exec "${BATTERYMON_SYSV}/batterymon-restart.sh" ${@}; exit 1
 
 exit_code='0'
 
 for daemon in 'batterymon' 'batterymon-arch'; do
-	"${BATTERYMON_SYSV%/*}/${daemon}.sh" ${@}
+	"${BATTERYMON_SYSV}/${daemon}.sh" ${@}
 	current_exit_code="$?"
 	[ ! "${current_exit_code}" = '0' ] && exit_code="${current_exit_code}"
 fi
