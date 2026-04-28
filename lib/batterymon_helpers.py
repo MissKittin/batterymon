@@ -3,6 +3,7 @@ import shutil
 import gzip
 import hashlib
 import re
+import importlib
 from datetime import datetime
 
 def merge_file(src, dest): # batterymon_common.mount_arch() and batterymon-arch.py
@@ -195,11 +196,10 @@ def gpio(callback=None):
         return _batterymon_gpio
 
     try:
-        match common().GPIO_DRIVER:
-            case "rpi":
-                from . import batterymon_gpio_rpi as gpio
-            case _:
-                from . import batterymon_gpio_dummy as gpio
+        gpio=importlib.import_module(
+            ".batterymon_gpio_"+common().GPIO_DRIVER,
+            package=__package__
+        )
     except(ImportError):
         if not callback is None:
             callback()

@@ -15,7 +15,7 @@ Tested on Raspberry Pi Zero W and AZO Digital LP12-150 LiFePO4 12V 150Ah
 
 ### Software requirements
 * compiled jbdtool
-* python 3.10 or newer
+* python 3
 * sudo
 * bluez  
 	if you use Bluetooth
@@ -116,7 +116,8 @@ In this configuration, you can also check if the AC side is working by pinging t
 
 When the LED indicating archiving is lit, the file `/tmp/.batterymon/GPIO_LED_ON` will be created.  
 When the LED indicating the need for intervention is lit, the file `/tmp/.batterymon/GPIO_LED_B_ON` will be created.  
-You can also programmatically press the GPIO button by creating an empty `/tmp/.batterymon/GPIO_BUTT_ON` file.
+You can also programmatically press the GPIO button by creating an empty `/tmp/.batterymon/GPIO_BUTT_ON` file.  
+If you want to write your own driver, use the code of the above drivers as a reference code.
 
 ### Log format
 The format of the `/tmp/.batterymon/pending.txt` file looks like this:

@@ -29,7 +29,7 @@ def _custom_log_params(name, value):
 SAVE_DATA_SECONDS=30 # read data every 30 seconds, batterymon.py
 AUTOARCHIVE_SECONDS=86400 # archive data every 24 hours, batterymon-arch.py
 ARCH_GENERATE_CHECKSUM=True # save sha512 checksum in .sha512 file next to archived file, batterymon-arch.py
-GPIO_DRIVER="rpi" # rpi or dummy, for now, only Raspberry Pi is supported, this file and batterymon-arch.py
+GPIO_DRIVER="rpi" # rpi or dummy, you can add your drivers (batterymon_gpio_* and batterymon_gpio_*.py), this file and batterymon-arch.py
 GPIO_BUTT=17 # "archive" button, disabled if None, batterymon_gpio_rpi.py
 GPIO_LED=27 # "archiving in progress" light, disabled if None, batterymon_gpio_rpi.py
 GPIO_LED_B=23 # "attention required" light, disabled if None, batterymon_gpio_rpi.py
@@ -112,7 +112,7 @@ def _check_battery_voltage(): # arch_trigger() and block_archive()
         try:
             if float(log[LOG_PARAMS.index("Voltage")+4]) < 12: # 10% in 12V LiFePO4 battery
                 return True
-        except (ValueError, IndexError):
+        except(ValueError, IndexError):
             continue
 
     return False
@@ -132,7 +132,7 @@ def _do_rsync(): # umount_arch()
     if process.wait() != 0:
         return 1
 
-    subprocess.run(["rsync", "-a", "--delete", "--ignore-existing", ARCH_MNT, ARCH_MNT_BACKUP])
+    subprocess.run(["rsync", "-a", "--delete", "--ignore-existing", ARCH_MNT+"/", ARCH_MNT_BACKUP])
 
     process=subprocess.Popen(["umount", ARCH_MNT_BACKUP])
 
