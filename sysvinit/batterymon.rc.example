@@ -1,0 +1,8 @@
+# Copy this file to batterymon.rc
+
+# define permissions in the system
+#USER='batterymon'
+#GROUP='batterymon'
+
+# set your own PATH variable
+#CUSTOM_PYTHON_PATH='/opt/python:/bin:/sbin:/usr/bin:/usr/sbin'
