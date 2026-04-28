@@ -105,74 +105,6 @@ def gzip_file_move(src, dest, compress_level=8, chunk_size=524288): # batterymon
 
     return False
 
-def gzip_file_move_old(src, dest, compress_level=8): # formerly used in batterymon-arch.py - now a free bird
-    try:
-        with open(src, "rb") as f_in, gzip.open(dest, "wb", compresslevel=compress_level) as f_out:
-            f_out.writelines(f_in)
-
-        os.remove(src)
-    except(Exception):
-        if os.path.exists(dest):
-            os.remove(dest)
-
-def extract_bt_macs(macs): # formerly used in batterymon_common.py - now a free bird
-    extracted_macs=[]
-
-    for mac in macs:
-        match=re.search(r"bt:([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})", mac)
-
-        if match:
-            extracted_macs.append(match.group(1))
-
-    return extracted_macs
-
-def parse_log_line(line): # batterymon_common._check_battery_voltage()
-    parsed_line=[]
-    use_subarray=False
-    subarray=[]
-
-    if line[-1:] == "\n":
-        line=line[:-1]
-
-    for item in line.split(" "):
-        if item.startswith("["):
-            if item.endswith("]"):
-                parsed_line.append([item.strip("[]")])
-                continue
-
-            use_subarray=True
-            subarray.append(item.lstrip("["))
-
-            continue
-
-        if item.endswith("]"):
-            use_subarray=False
-            subarray.append(item.rstrip("]"))
-            parsed_line.append(subarray)
-            subarray=[]
-
-            continue
-
-        if use_subarray:
-            subarray.append(item)
-            continue
-
-        parsed_line.append(item)
-
-    return parsed_line
-
-def sha512sum(file_path): # formerly used in batterymon-arch.py - now a free bird
-    hasher=hashlib.sha512()
-
-    try:
-        with open(file_path, 'rb') as f:
-            for chunk in iter(lambda: f.read(4096), b''):
-                hasher.update(chunk)
-    except(Exception):
-        return None
-
-    return hasher.hexdigest()
-
 def sanitize_filename(filename, placeholder="_"): # batterymon.py
     return re.sub(r'[\\/:*?"<>|]', placeholder, filename)
 
@@ -210,6 +142,19 @@ def gpio(callback=None):
 
     return gpio
 
+def parse_log_line(line):
+    global _batterymon_helpers_parse_log_line
+
+    if not _batterymon_helpers_parse_log_line is None:
+        return _batterymon_helpers_parse_log_line.parse_log_line(line)
+
+    from . import batterymon_helpers_parse_log_line as helpers_parse_log_line
+
+    _batterymon_helpers_parse_log_line=helpers_parse_log_line
+
+    return helpers_parse_log_line.parse_log_line(line)
+
 # init
 _batterymon_common=None
 _batterymon_gpio=None
+_batterymon_helpers_parse_log_line=None

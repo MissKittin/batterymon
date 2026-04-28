@@ -166,7 +166,8 @@ In this configuration, you can also check if the AC side is working by pinging t
 When the LED indicating archiving is lit, the file `/tmp/.batterymon/GPIO_LED_ON` will be created.  
 When the LED indicating the need for intervention is lit, the file `/tmp/.batterymon/GPIO_LED_B_ON` will be created.  
 You can also programmatically press the GPIO button by creating an empty `/tmp/.batterymon/GPIO_BUTT_ON` file.  
-If you want to write your own driver, use the code of the above drivers as a reference code.
+If you want to write your own driver, use the code of the above drivers as a reference code.  
+The project provides an interface for easy interaction - see the functions in the `batterymon_lib/batterymon_gpio_files.py` library.
 
 ### Log format
 The format of the `/tmp/.batterymon/pending.txt` file looks like this:
@@ -176,6 +177,41 @@ YYYY-mm-dd HH:MM:SS EX bt:device-mac,desc Exception message
 YYYY-mm-dd HH:MM:SS RL
 ```
 where `RL` means "reading locked".
+
+#### Log parsing
+The project provides log parsing functions so that you don't have to waste time on it.  
+You can parse the log into a list or into a dict. The `log_line_dict` function gives you a good starting point.  
+**Warning:** the `parse_log_line` function is a dumb parser - the exception message can be split.  
+This is what sample code that handles parsing looks like:
+```
+from collections import deque
+
+sys.path.insert(1, "/usr/local/share/batterymon")
+
+from batterymon_lib import batterymon_helpers
+from batterymon_lib import batterymon_helpers_extra
+batterymon_common=batterymon_helpers.common()
+
+# get log path
+current_out=batterymon_helpers_extra.get_current_out_path(
+    batterymon_common
+)
+
+# get as many lines from the log as there are defined devices
+with open(current_out, "r") as f:
+    logs=list(deque(f, maxlen=len(batterymon_common.DEVICES)))
+    
+for log_line in logs:
+    parsed_log_line=batterymon_helpers.parse_log_line(log_line)
+    # you will get a list of strings like ["2026-04-24", "15:50:00", "OK", "bt:00:11:22:33:44:55", "13.3333", "1.034", ["3.23", "3.24", "3.23"] ...]
+
+    dict_log_line=batterymon_helpers_extra.log_line_dict(
+        parsed_log_line,
+        batterymon_common
+    )
+    # you will get a string dict like {"_bm_date": "2026-04-24", "_bm_time": "15:50:00", "_bm_status": "OK", "_bm_device": "bt:00:11:22:33:44:55", "Voltage": "13.3333", "Current": "1.034", "Cells": ["3.23", "3.24", "3.23"] ...}
+```
+The formats are better described in the files `batterymon_lib/batterymon_helpers_parse_log_line.py` and `batterymon_lib/batterymon_helpers_extra.py`.
 
 ### Debugging
 For the `batterymon-arch.py` to work, create the directories `/tmp/batterymon-mnt`, `/tmp/batterymon-mnt-backup` and add to `/etc/fstab`:
