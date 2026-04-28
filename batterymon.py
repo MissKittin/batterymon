@@ -25,6 +25,7 @@ def write_log(current_out, message):
 
 if not os.path.exists(batterymon_common.WORK_DIR):
     os.makedirs(batterymon_common.WORK_DIR)
+    os.chmod(batterymon_common.WORK_DIR, 0o1771)
 
 while True:
     current_out=batterymon_common.CURRENT_OUT
@@ -73,7 +74,7 @@ while True:
             write_log(current_out, output_line)
             print_debug(".")
             batterymon_common.post_log(device, d)
-        except ValueError as e:
+        except(ValueError) as e:
             json_data_raw="<no data>"
 
             if 'json_data' in locals():
@@ -85,7 +86,7 @@ while True:
             )
 
             print_debug("e")
-        except Exception as e:
+        except(Exception) as e:
             write_log(current_out, ""
             +   "EX "+device+" "+str(e)
             )
