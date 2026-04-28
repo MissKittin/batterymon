@@ -65,6 +65,6 @@ for daemon in 'batterymon' 'batterymon-arch'; do
 	"${BATTERYMON_SYSV}/${daemon}.sh" ${@}
 	current_exit_code="$?"
 	[ ! "${current_exit_code}" = '0' ] && exit_code="${current_exit_code}"
-fi
+done
 
 exit "${exit_code}"
