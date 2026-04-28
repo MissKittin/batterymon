@@ -26,6 +26,7 @@ def _custom_log_params(name, value):
     return "_custom_log_params_NA_"
 
 # settings
+GET_BMS_JSON_DATA_MULTIPROCESS=False # start reading parameters of all devices in parallel (at the same time), batterymon.py
 SAVE_DATA_SECONDS=30 # read data every 30 seconds, batterymon.py
 AUTOARCHIVE_SECONDS=86400 # archive data every 24 hours, batterymon-arch.py
 ARCH_GENERATE_CHECKSUM=True # save sha512 checksum in .sha512 file next to archived file, batterymon-arch.py
@@ -92,7 +93,7 @@ GPIO_LED_B_IND=WORK_DIR+"/GPIO_LED_B_ON" # gpio drivers
 GPIO_BUTT_SW=WORK_DIR+"/GPIO_BUTT_ON" # gpio drivers
 
 # settings - helpers
-def _check_battery_voltage(): # arch_trigger() and block_archive()
+def _check_battery_voltage(voltage_label="Voltage"): # arch_trigger() and block_archive()
     # check if the batteries are discharged (12V)
 
     logs=[]
@@ -110,7 +111,7 @@ def _check_battery_voltage(): # arch_trigger() and block_archive()
             continue
 
         try:
-            if float(log[LOG_PARAMS.index("Voltage")+4]) < 12: # 10% in 12V LiFePO4 battery
+            if float(log[LOG_PARAMS.index(voltage_label)+4]) < 12: # 10% in 12V LiFePO4 battery
                 return True
         except(ValueError, IndexError):
             continue
