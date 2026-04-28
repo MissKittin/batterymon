@@ -1,6 +1,7 @@
 Link batterymon.sh and batterymon-arch.sh to /etc/init.d and insserv
 OR
 Link batterymon-restart.sh to /etc/init.d and insserv
+Warning: if you set ENABLE_WATCHDOG=true in batterymon.rc, do not use batterymon-restart.sh
 
 You can insserv batterymon-faststart.sh instead of batterymon-restart.sh
 This will allow batterymon to start very early in the system boot process

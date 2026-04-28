@@ -10,13 +10,13 @@
 # Short-Description: batterymon fast start
 ### END INIT INFO
 
+GPIO_LED='27'
+GPIO_LED_B='23'
+
 BATTERYMON_SYSV="$(readlink -f "${0}")"
 PATH='/sbin:/bin:/usr/sbin:/usr/bin'
 
 . '/lib/lsb/init-functions'
-
-GPIO_LED='27'
-GPIO_LED_B='23'
 
 prepare_batterymon()
 {
@@ -42,7 +42,7 @@ prepare_batterymon()
 	#echo 'batterymon: I am starting' > '/dev/kmsg' # debug
 }
 
-[ -e '/var/run/.batterymon-prepared' ] || case "$1" in
+[ -e '/var/run/.batterymon-prepared' ] || case "${1}" in
 	'start')
 		log_action_msg_pre; echo 'Preparing batterymon: batterymon-faststart'
 		prepare_batterymon
@@ -50,6 +50,15 @@ prepare_batterymon()
 	;;
 esac
 
-exec "${BATTERYMON_SYSV%/*}/batterymon-restart.sh" ${@}
+# if you have set ENABLE_WATCHDOG=true in batterymon.rc, comment out the line below
+exec "${BATTERYMON_SYSV%/*}/batterymon-restart.sh" ${@}; exit 1
 
-exit 0
+exit_code='0'
+
+for daemon in 'batterymon' 'batterymon-arch'; do
+	"${BATTERYMON_SYSV%/*}/${daemon}.sh" ${@}
+	current_exit_code="$?"
+	[ ! "${current_exit_code}" = '0' ] && exit_code="${current_exit_code}"
+fi
+
+exit "${exit_code}"

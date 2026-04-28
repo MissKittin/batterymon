@@ -1,5 +1,8 @@
 # Copy this file to batterymon.rc
 
+# use internal watchdogs instead of batterymon-restart.sh
+#ENABLE_WATCHDOG='true'
+
 # define permissions in the system
 #USER='batterymon'
 #GROUP='batterymon'
