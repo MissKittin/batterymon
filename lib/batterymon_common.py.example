@@ -216,6 +216,11 @@ def arch_trigger(last_archive_time, now_time): # batterymon-arch.py
         return False
 
     if _check_battery_voltage():
+        # the voltage drop may be caused by the inrush current
+        time.sleep(SAVE_DATA_SECONDS*2)
+        if not _check_battery_voltage():
+            return False
+
         _arch_triggered=True
         return True
 
