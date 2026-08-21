@@ -83,6 +83,12 @@ WORK_DIR="/tmp/.batterymon"
 CURRENT_OUT=WORK_DIR+"/pending.txt"
 BACKUP_OUT=WORK_DIR+"/pending-tmp.txt" # batterymon.py, writes to this file during log rotation
 DUMP_RAW_JSON=False # batterymon.py, dumps the read json to CURRENT_OUT+"-"+device
+DUMP_RAW_JSON_IGNORE=[ # batterymon.py
+    # define the devices for which the DUMP_RAW_JSON option should be set to False
+    # applies when DUMP_RAW_JSON is True
+
+    #"bt:01:23:45:67:89:AB"
+]
 LOCK_FILE=WORK_DIR+"/arch.lock" # created by batterymon-arch.py
 READ_LOCK_FILE=WORK_DIR+"/bmsread.lock" # if you create this file, you will block reading data from BMS in batterymon.py
 ARCH_LOG=WORK_DIR+"/arch-log.txt" # batterymon-arch.py
@@ -96,13 +102,23 @@ GPIO_BUTT_SW=WORK_DIR+"/GPIO_BUTT_ON" # gpio drivers
 def _check_battery_voltage(voltage_label="Voltage"): # arch_trigger() and block_archive()
     # check if the batteries are discharged (12V)
 
-    logs=[]
-
     if not os.path.exists(CURRENT_OUT):
         return False
 
+    logs=[]
+    devices_len=0
+
+    for device in DEVICES:
+        if LOG_PARAMS == LOG_PARAMS_IGNORE.get(device, []):
+            continue
+
+        devices_len+=1
+
+    if devices_len == 0:
+        return False
+
     with open(CURRENT_OUT, "r") as f:
-        logs.extend(deque(f, maxlen=len(DEVICES)))
+        logs.extend(deque(f, maxlen=devices_len))
 
     for log in logs:
         log=batterymon_helpers.parse_log_line(log)
@@ -182,8 +198,20 @@ def on_read_lock(): # batterymon.py
     # this function is void - return is not needed
     return
 
+def log_start(): # batterymon.py
+    # execute before starting a series of readings (before all pre_log)
+    # this function is void - return is not needed
+    return
+
+def pre_log(device, data): # batterymon.py
+    # execute after reading data from BMS and before writing to the log
+    # this function will not be run if get_bms_json_data throws an exception
+    # this function is void - return is not needed
+    return
+
 def post_log(device, data): # batterymon.py
-    # execute after reading the data (light up the GPIO_LED_B)
+    # execute after writing data to the log (light up the GPIO_LED_B)
+    # this function will not be run if get_bms_json_data throws an exception
 
     batterymon_gpio=batterymon_helpers.gpio()
     cell_diff=data.get("CellDiff", 0)
@@ -197,6 +225,11 @@ def post_log(device, data): # batterymon.py
     if cell_diff >= 0.05:
         batterymon_gpio.led_b(True)
         return
+
+def log_finish(): # batterymon.py
+    # execute after completing a series of readings (after all post_log)
+    # this function is void - return is not needed
+    return
 
 def on_sleep(sleep_second): # batterymon.py
     # this function is run every second for SAVE_DATA_SECONDS times after data is saved (sleep with callback)

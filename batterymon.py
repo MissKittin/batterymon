@@ -74,65 +74,77 @@ if __name__ == "__main__":
 
                 continue
 
-            if batterymon_common.GET_BMS_JSON_DATA_MULTIPROCESS:
-                json_cache=dict(get_bms_json_data_pool.map(
-                    get_bms_json_data_multiprocess,
-                    batterymon_common.DEVICES
-                ))
-            else:
-                for device in batterymon_common.DEVICES:
+            try:
+                batterymon_common.log_start()
+
+                if batterymon_common.GET_BMS_JSON_DATA_MULTIPROCESS:
+                    json_cache=dict(get_bms_json_data_pool.map(
+                        get_bms_json_data_multiprocess,
+                        batterymon_common.DEVICES
+                    ))
+                else:
+                    for device in batterymon_common.DEVICES:
+                        try:
+                            json_cache[device]=(
+                                *batterymon_common.get_bms_json_data(device),
+                                datetime_now()
+                            )
+                        except(Exception) as e:
+                            json_cache[device]=(
+                                "EX", e,
+                                datetime_now()
+                            )
+
+                for device, (d, json_data, saved_date) in json_cache.items():
                     try:
-                        json_cache[device]=(
-                            *batterymon_common.get_bms_json_data(device),
-                            datetime_now()
-                        )
+                        if d == "EX":
+                            write_log(current_out, saved_date
+                            +   " EX "+device+" "+str(json_data).replace("\n", "\\n")
+                            )
+                            continue
+
+                        batterymon_common.pre_log(device, d)
+
+                        output_line="OK "+device
+                        save_to_log=False
+
+                        for param in batterymon_common.LOG_PARAMS:
+                            if param in batterymon_common.LOG_PARAMS_IGNORE.get(device, []):
+                                continue
+
+                            save_to_log=True
+
+                            if param in batterymon_common.CUSTOM_LOG_PARAMS:
+                                output_line+=" "+str(batterymon_common.CUSTOM_LOG_PARAMS[param](
+                                    param, d.get(param, None)
+                                ))
+                                continue
+
+                            if isinstance(d.get(param, ""), list):
+                                output_line+=" ["+" ".join(str(x) for x in d.get(param, []))+"]"
+                                continue
+
+                            output_line+=" "+str(
+                                d.get(param, "-1")
+                            )
+
+                        if batterymon_common.DUMP_RAW_JSON and device not in batterymon_common.DUMP_RAW_JSON_IGNORE:
+                            with open(batterymon_common.CURRENT_OUT+"-"+batterymon_helpers.sanitize_filename(device), "wb") as json_data_f:
+                                json_data_f.write(json_data)
+
+                        if save_to_log:
+                            write_log(
+                                current_out,
+                                saved_date+" "+output_line
+                            )
+
+                        batterymon_common.post_log(device, d)
                     except(Exception) as e:
-                        json_cache[device]=(
-                            "EX", e,
-                            datetime_now()
+                        write_log(current_out, datetime_now()
+                        +   " EX "+device+" "+str(e).replace("\n", "\\n")
                         )
-
-            for device, (d, json_data, saved_date) in json_cache.items():
-                try:
-                    if d == "EX":
-                        write_log(current_out, saved_date
-                        +   " EX "+device+" "+str(json_data).replace("\n", "\\n")
-                        )
-                        continue
-
-                    output_line="OK "+device
-
-                    if batterymon_common.DUMP_RAW_JSON:
-                        with open(batterymon_common.CURRENT_OUT+"-"+batterymon_helpers.sanitize_filename(device), "wb") as json_data_f:
-                            json_data_f.write(json_data)
-
-                    for param in batterymon_common.LOG_PARAMS:
-                        if param in batterymon_common.LOG_PARAMS_IGNORE.get(device, []):
-                            continue
-
-                        if param in batterymon_common.CUSTOM_LOG_PARAMS:
-                            output_line+=" "+str(batterymon_common.CUSTOM_LOG_PARAMS[param](
-                                param, d.get(param, None)
-                            ))
-                            continue
-
-                        if isinstance(d.get(param, ""), list):
-                            output_line+=" ["+" ".join(str(x) for x in d.get(param, []))+"]"
-                            continue
-
-                        output_line+=" "+str(
-                            d.get(param, "-1")
-                        )
-
-                    write_log(
-                        current_out,
-                        saved_date+" "+output_line
-                    )
-                    batterymon_common.post_log(device, d)
-                except(Exception) as e:
-                    write_log(current_out, datetime_now()
-                    +   " EX "+device+" "+str(e).replace("\n", "\\n")
-                    )
+            finally:
+                batterymon_common.log_finish()
 
             json_cache={}
             sleep_second=0

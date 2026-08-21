@@ -50,7 +50,7 @@ def log_line_dict_flatten(items): # log_line_dict()
         else:
             yield item
 
-def log_line_dict(parsed_line, batterymon_common): # for batterymon-extras project
+def log_line_dict(parsed_line, batterymon_common, prefix="_bm_"): # for batterymon-extras project
     # Usage:
     #  log_line=<line read from pending.txt>
     #  try:
@@ -88,20 +88,20 @@ def log_line_dict(parsed_line, batterymon_common): # for batterymon-extras proje
 
     if parsed_line[2] == "RL":
         return dict(zip(
-            ["_bm_date", "_bm_time", "_bm_status"],
+            [prefix+"date", prefix+"time", prefix+"status"],
             parsed_line
         ))
 
     if parsed_line[2] == "EX":
         return dict(zip(
-            ["_bm_date", "_bm_time", "_bm_status", "_bm_device", "_bm_ex_msg"],
+            [prefix+"date", prefix+"time", prefix+"status", prefix+"device", prefix+"ex_msg"],
             parsed_line[:4]+[" ".join(str(x) for x in log_line_dict_flatten(
                 parsed_line[4:]
             ))]
         ))
 
     return dict(zip(
-        ["_bm_date", "_bm_time", "_bm_status", "_bm_device"]+[p for p in batterymon_common.LOG_PARAMS if p not in batterymon_common.LOG_PARAMS_IGNORE.get(
+        [prefix+"date", prefix+"time", prefix+"status", prefix+"device"]+[p for p in batterymon_common.LOG_PARAMS if p not in batterymon_common.LOG_PARAMS_IGNORE.get(
             parsed_line[3],
             []
         )],
@@ -115,3 +115,22 @@ def get_current_out_path(batterymon_common): # for batterymon-extras project
         current_out=batterymon_common.BACKUP_OUT
 
     return current_out
+
+def get_log_devices(batterymon_common): # for batterymon-extras project
+    return [
+        device
+        for device in batterymon_common.DEVICES
+        if any(
+            param not in batterymon_common.LOG_PARAMS_IGNORE.get(device, [])
+            for param in batterymon_common.LOG_PARAMS
+        )
+    ]
+
+def get_log_devices_len(batterymon_common): # for batterymon-extras project
+    params=batterymon_common.LOG_PARAMS
+    ignored=batterymon_common.LOG_PARAMS_IGNORE
+
+    return sum(
+        any(param not in ignored.get(device, []) for param in params)
+        for device in batterymon_common.DEVICES
+    )

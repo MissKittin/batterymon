@@ -154,6 +154,76 @@ You can also add a second drive - it will serve as a backup in case your primary
 `batterymon-fsck.py` is run from `batterymon-arch.py` via `sudo` - the filesystem is checked before each external storage mount.  
 In this configuration, you can also check if the AC side is working by pinging the SBC. If it doesn't respond, the inverter is off (you've used up all the battery power, the battery fuse has blown or the inverter is burned out).
 
+### Virtual devices
+You can define virtual devices, i.e. devices whose data is read by BatteryMon but is not written to the main log.  
+It works like this: in the `batterymon_common.py`, the `LOG_PARAMS_IGNORE[virtual_device_name]` list is the same as the `LOG_PARAMS` list:
+```
+from datetime import datetime
+
+LOG_PARAMS=[
+    "Voltage",
+    "Current",
+    "RemainingCapacity",
+    "PercentCapacity",
+    "CycleCount",
+    "Temps",
+    "Cells",
+    "Balance",
+    "CellTotal",
+    "CellMin",
+    "CellMax",
+    "CellDiff",
+    "CellAvg",
+    "FET"
+]
+DEVICES=[
+    "bt:00:11:22:33:44:55",
+    "bt:01:23:45:67:89:AB",
+    "vdev:name"
+]
+LOG_PARAMS_IGNORE={
+    "vdev:name": LOG_PARAMS
+}
+
+def get_bms_json_data(device):
+    if device.startswith("vdev:"):
+        # return data from virtual device (remember to catch exceptions)
+        try:
+            return ({
+                "paramA": "valueA",
+                "paramB": "valueB"
+            }, "string-for-dump-raw-json")
+        except(Exception):
+            return ({}, "")
+
+    # continuation of the original code
+
+def post_log(device, data):
+    # save data to file here (remember to catch exceptions)
+    try:
+        with open("/tmp/vdev.log", "a") as log:
+            try:
+                output_line="OK "+device
+
+                for param in ["paramA", "paramB"]:
+                    output_line+=" "+str(
+                        data.get(param, "-1")
+                    )
+
+                log.write(datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+                +   " "+output_line+"\n"
+                )
+            except(Exception) as e:
+                log.write(datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+                +   " EX "+device+" "+str(e).replace("\n", "\\n")+"\n"
+                )
+    except(Exception):
+        pass
+
+# you can optionally exclude the device from the DUMP_RAW_JSON function
+DUMP_RAW_JSON_IGNORE=["vdev:name"]
+```
+
 ### Scripts
 `batterymon.py` - reads data from the BMS and writes it to the log  
 `batterymon-arch.py` - archives the log to an external disk  
@@ -198,8 +268,12 @@ current_out=batterymon_helpers_extra.get_current_out_path(
 )
 
 # get as many lines from the log as there are defined devices
+# note: if you need a list of devices, use batterymon_helpers_extra.get_log_devices(batterymon_common)
 with open(current_out, "r") as f:
-    logs=list(deque(f, maxlen=len(batterymon_common.DEVICES)))
+    logs=list(deque(
+        f,
+        maxlen=batterymon_helpers_extra.get_log_devices_len(batterymon_common)
+	))
     
 for log_line in logs:
     parsed_log_line=batterymon_helpers.parse_log_line(log_line)
