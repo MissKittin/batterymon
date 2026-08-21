@@ -149,7 +149,6 @@ When transferring a file, a SHA512 checksum is generated - you can check whether
 Additionally, if one of the batteries requires attention (e.g. the cells need to be balanced) or there is a problem with the external disk, a second LED will light up.  
 External memory is designed to protect data from loss due to power outages. Therefore, current data is stored in tmpfs, and the memory containing the operating system is mounted in read-only mode.  
 Therefore, there's no need to turn off the system. Simply unplug the cable (or turn off the DC-AC inverter unless the LED is on - then wait until it turns off).  
-**Note:** automatic archiving will not be activated if any BMS reports a voltage lower than 12V (you can change this in the settings).  
 You can also add a second drive - it will serve as a backup in case your primary drive fails. This option is enabled by default – set `ARCH_MNT_BACKUP` to `None` to disable this feature.  
 `batterymon-fsck.py` is run from `batterymon-arch.py` via `sudo` - the filesystem is checked before each external storage mount.  
 In this configuration, you can also check if the AC side is working by pinging the SBC. If it doesn't respond, the inverter is off (you've used up all the battery power, the battery fuse has blown or the inverter is burned out).

@@ -4,7 +4,7 @@ import json
 import sys
 import time
 import shutil
-from collections import deque
+
 from . import batterymon_helpers
 
 # settings - CUSTOM_LOG_PARAMS
@@ -99,44 +99,6 @@ GPIO_LED_B_IND=WORK_DIR+"/GPIO_LED_B_ON" # gpio drivers
 GPIO_BUTT_SW=WORK_DIR+"/GPIO_BUTT_ON" # gpio drivers
 
 # settings - helpers
-def _check_battery_voltage( # arch_trigger() and block_archive()
-    voltage_label="Voltage",
-    min_voltage=12 # 10% in 12V LiFePO4 battery
-):
-    # check if the batteries are discharged (12V)
-
-    if not os.path.exists(CURRENT_OUT):
-        return False
-
-    logs=[]
-    devices_len=0
-
-    for device in DEVICES:
-        if LOG_PARAMS == LOG_PARAMS_IGNORE.get(device, []):
-            continue
-
-        devices_len+=1
-
-    if devices_len == 0:
-        return False
-
-    with open(CURRENT_OUT, "r") as f:
-        logs.extend(deque(f, maxlen=devices_len))
-
-    for log in logs:
-        log=batterymon_helpers.parse_log_line(log)
-
-        if log[2] != "OK":
-            continue
-
-        try:
-            if float(log[LOG_PARAMS.index(voltage_label)+4]) < min_voltage:
-                return True
-        except(ValueError, IndexError):
-            continue
-
-    return False
-
 def _do_rsync(): # umount_arch()
     if ARCH_MNT_BACKUP is None:
         return
@@ -207,7 +169,6 @@ def log_start(): # batterymon.py
 def pre_log(device, data): # batterymon.py
     # execute after reading data from BMS and before writing to the log
     # this function will not be run if get_bms_json_data throws an exception
-
     pass
 
 def post_log(device, data): # batterymon.py
@@ -236,38 +197,17 @@ def on_sleep(sleep_second): # batterymon.py
 
     pass
 
-_arch_triggered=False # trigger archive once
 def arch_trigger(last_archive_time, now_time): # batterymon-arch.py
-    # run archiving once before the inverter shuts down
-
-    global _arch_triggered
-
-    if _arch_triggered:
-        if not _check_battery_voltage():
-            _arch_triggered=False
-
-        return False
-
-    if _check_battery_voltage():
-        # the voltage drop may be caused by the inrush current
-        time.sleep(SAVE_DATA_SECONDS*2)
-        if not _check_battery_voltage():
-            return False
-
-        _arch_triggered=True
-        return True
-
-    _arch_triggered=False
+    # automatically start archiving when an event occurs
+    # (returns True if archiving is to be invoked)
 
     return False
 
-def block_archive(type): # batterymon-arch.py
-    # block archiving (when the battery is discharged)
+def block_archive(archive_type): # batterymon-arch.py
+    # block archiving (returns True if archiving is to be canceled)
+    # archive_type: Manual, Triggered, Retry or Automatic
 
-    if type == "Manual" or type == "Triggered": # archive type, Manual, Triggered, Retry or Automatic
-        return False
-
-    return _check_battery_voltage()
+    return False
 
 def mount_arch(): # batterymon-arch.py
     # a function that mounts the disk containing the archive
