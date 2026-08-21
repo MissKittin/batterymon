@@ -112,7 +112,7 @@ def sanitize_filename(filename, placeholder="_"): # batterymon.py
 def common():
     global _batterymon_common
 
-    if not _batterymon_common is None:
+    if _batterymon_common is not None:
         return _batterymon_common
 
     from . import batterymon_common as common
@@ -124,7 +124,7 @@ def common():
 def gpio(callback=None):
     global _batterymon_gpio
 
-    if not _batterymon_gpio is None:
+    if _batterymon_gpio is not None:
         return _batterymon_gpio
 
     try:
@@ -133,7 +133,7 @@ def gpio(callback=None):
             package=__package__
         )
     except(ImportError):
-        if not callback is None:
+        if callback is not None:
             callback()
 
         from . import batterymon_gpio_drv_dummy as gpio
@@ -142,17 +142,18 @@ def gpio(callback=None):
 
     return gpio
 
-def parse_log_line(line):
+def parse_log_line(line, import_only=False):
     global _batterymon_helpers_parse_log_line
 
-    if not _batterymon_helpers_parse_log_line is None:
-        return _batterymon_helpers_parse_log_line.parse_log_line(line)
+    if _batterymon_helpers_parse_log_line is None:
+        from . import batterymon_helpers_parse_log_line as helpers_parse_log_line
 
-    from . import batterymon_helpers_parse_log_line as helpers_parse_log_line
+        _batterymon_helpers_parse_log_line=helpers_parse_log_line
 
-    _batterymon_helpers_parse_log_line=helpers_parse_log_line
+    if import_only:
+        return
 
-    return helpers_parse_log_line.parse_log_line(line)
+    return _batterymon_helpers_parse_log_line.parse_log_line(line)
 
 # init
 _batterymon_common=None

@@ -50,7 +50,34 @@ def log_line_dict_flatten(items): # log_line_dict()
         else:
             yield item
 
-def log_line_dict(parsed_line, batterymon_common, prefix="_bm_"): # for batterymon-extras project
+def log_line_dict_cache( # log_line_dict()
+    device,
+    batterymon_common,
+    prefix="_bm_",
+    rebuild=False
+):
+    global _log_line_dict_key_cache
+
+    keys=_log_line_dict_key_cache.get(device, None)
+
+    if rebuild or keys is None:
+        keys=[prefix+"date", prefix+"time", prefix+"status", prefix+"device"]+[
+            p for p in batterymon_common.LOG_PARAMS if p not in batterymon_common.LOG_PARAMS_IGNORE.get(
+                device,
+                []
+            )
+        ]
+
+        _log_line_dict_key_cache[device]=keys
+
+    return keys
+
+def log_line_dict( # for batterymon-extras project
+    parsed_line,
+    batterymon_common,
+    prefix="_bm_",
+    build_cache=False
+):
     # Usage:
     #  log_line=<line read from pending.txt>
     #  try:
@@ -86,25 +113,32 @@ def log_line_dict(parsed_line, batterymon_common, prefix="_bm_"): # for batterym
     #   "LastParamFromDEVICES": "value"
     #  }
 
+    if build_cache:
+        for device in get_log_devices(batterymon_common):
+            log_line_dict_cache(device, batterymon_common, prefix)
+
+        return
+
     if parsed_line[2] == "RL":
-        return dict(zip(
-            [prefix+"date", prefix+"time", prefix+"status"],
-            parsed_line
-        ))
+        return {
+            prefix+"date": parsed_line[0],
+            prefix+"time": parsed_line[1],
+            prefix+"status": parsed_line[2]
+        }
 
     if parsed_line[2] == "EX":
-        return dict(zip(
-            [prefix+"date", prefix+"time", prefix+"status", prefix+"device", prefix+"ex_msg"],
-            parsed_line[:4]+[" ".join(str(x) for x in log_line_dict_flatten(
-                parsed_line[4:]
-            ))]
-        ))
+        return {
+            prefix+"date": parsed_line[0],
+            prefix+"time": parsed_line[1],
+            prefix+"status": parsed_line[2],
+            prefix+"device": parsed_line[3],
+            prefix+"ex_msg": " ".join(
+                str(x) for x in log_line_dict_flatten(parsed_line[4:])
+            )
+        }
 
     return dict(zip(
-        [prefix+"date", prefix+"time", prefix+"status", prefix+"device"]+[p for p in batterymon_common.LOG_PARAMS if p not in batterymon_common.LOG_PARAMS_IGNORE.get(
-            parsed_line[3],
-            []
-        )],
+        log_line_dict_cache(parsed_line[3], batterymon_common, prefix),
         parsed_line
     ))
 
@@ -116,7 +150,7 @@ def get_current_out_path(batterymon_common): # for batterymon-extras project
 
     return current_out
 
-def get_log_devices(batterymon_common): # for batterymon-extras project
+def get_log_devices(batterymon_common): # for log_line_dict() and batterymon-extras project
     return [
         device
         for device in batterymon_common.DEVICES
@@ -127,10 +161,10 @@ def get_log_devices(batterymon_common): # for batterymon-extras project
     ]
 
 def get_log_devices_len(batterymon_common): # for batterymon-extras project
-    params=batterymon_common.LOG_PARAMS
-    ignored=batterymon_common.LOG_PARAMS_IGNORE
-
     return sum(
-        any(param not in ignored.get(device, []) for param in params)
+        any(param not in batterymon_common.LOG_PARAMS_IGNORE.get(device, []) for param in batterymon_common.LOG_PARAMS)
         for device in batterymon_common.DEVICES
     )
+
+# init
+_log_line_dict_key_cache={}

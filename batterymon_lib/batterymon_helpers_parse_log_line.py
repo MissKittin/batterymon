@@ -38,10 +38,10 @@ def parse_log_line(line): # batterymon_common._check_battery_voltage()
     use_subarray=False
     subarray=[]
 
-    if line[-1:] == "\n":
-        line=line.rstrip("\n")
+    line=line.rstrip("\n")
+    items=line.split()
 
-    for item in line.split():
+    for item in items:
         if item.startswith("["):
             if item.endswith("]"):
                 parsed_line.append([item.strip("[]")])

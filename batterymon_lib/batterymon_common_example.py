@@ -17,11 +17,11 @@ def _custom_log_params(name, value):
     # read from get_bms_json_data or None (you can create wrapper functions)
     # this function must return some value so that batterymon.py writes it to the log
 
-    if name == "ExternalTemperature":
-        return 25
+    #if name == "ExternalTemperature":
+    #    return 25
 
-    if name == "Voltage": # wrapper functions
-        return value*100
+    #if name == "Voltage": # wrapper functions
+    #    return value*100
 
     return "_custom_log_params_NA_"
 
@@ -42,8 +42,8 @@ ARCH_LOG_DIR=ARCH_DIR+"/logs" # directory for rotated ARCH_LOG, ARCH_ERR and FSC
 ARCH_LOG_MAX_SIZE=31457280 # 30MB; ARCH_LOG, FSCK_LOG and ARCH_ERR in ARCH_LOG_DIR; batterymon_helpers.gzip_file_if_big()
 DEVICES=[ # batterymon.py
     # define your BMS addresses here
-    "bt:00:11:22:33:44:55",
-    "bt:01:23:45:67:89:AB"
+    #"bt:00:11:22:33:44:55",
+    #"bt:01:23:45:67:89:AB"
 ]
 LOG_PARAMS=[ # batterymon.py
     # define here what parameters from jbdtool you want to write to the log
@@ -62,20 +62,20 @@ LOG_PARAMS=[ # batterymon.py
     "CellDiff",
     "CellAvg",
     "FET",
-    "ExternalTemperature" # custom log param (can be anywhere in the array)
+    #"ExternalTemperature" # custom log param (can be anywhere in the array)
 ]
 LOG_PARAMS_IGNORE={ # batterymon.py
     # if you do not want to log some parameters
     # from LOG_PARAMS for specific devices, add them here
 
-    "bt:01:23:45:67:89:AB": ["Temps", "Balance"]
+    #"bt:01:23:45:67:89:AB": ["Temps", "Balance"]
 }
 CUSTOM_LOG_PARAMS={ # batterymon.py
     # here you define callbacks for external parameters
     # it's important that the dict value is callable
 
     #"Voltage": _custom_log_params, # wrapper functions
-    "ExternalTemperature": _custom_log_params
+    #"ExternalTemperature": _custom_log_params
 }
 
 # internal settings
@@ -99,7 +99,10 @@ GPIO_LED_B_IND=WORK_DIR+"/GPIO_LED_B_ON" # gpio drivers
 GPIO_BUTT_SW=WORK_DIR+"/GPIO_BUTT_ON" # gpio drivers
 
 # settings - helpers
-def _check_battery_voltage(voltage_label="Voltage"): # arch_trigger() and block_archive()
+def _check_battery_voltage( # arch_trigger() and block_archive()
+    voltage_label="Voltage",
+    min_voltage=12 # 10% in 12V LiFePO4 battery
+):
     # check if the batteries are discharged (12V)
 
     if not os.path.exists(CURRENT_OUT):
@@ -127,7 +130,7 @@ def _check_battery_voltage(voltage_label="Voltage"): # arch_trigger() and block_
             continue
 
         try:
-            if float(log[LOG_PARAMS.index(voltage_label)+4]) < 12: # 10% in 12V LiFePO4 battery
+            if float(log[LOG_PARAMS.index(voltage_label)+4]) < min_voltage:
                 return True
         except(ValueError, IndexError):
             continue
@@ -195,19 +198,17 @@ def get_bms_json_data(device): # batterymon.py
 
 def on_read_lock(): # batterymon.py
     # do something if you block reading data from BMS
-    # this function is void - return is not needed
-    return
+    pass
 
 def log_start(): # batterymon.py
     # execute before starting a series of readings (before all pre_log)
-    # this function is void - return is not needed
-    return
+    pass
 
 def pre_log(device, data): # batterymon.py
     # execute after reading data from BMS and before writing to the log
     # this function will not be run if get_bms_json_data throws an exception
-    # this function is void - return is not needed
-    return
+
+    pass
 
 def post_log(device, data): # batterymon.py
     # execute after writing data to the log (light up the GPIO_LED_B)
@@ -224,18 +225,16 @@ def post_log(device, data): # batterymon.py
 
     if cell_diff >= 0.05:
         batterymon_gpio.led_b(True)
-        return
 
 def log_finish(): # batterymon.py
     # execute after completing a series of readings (after all post_log)
-    # this function is void - return is not needed
-    return
+    pass
 
 def on_sleep(sleep_second): # batterymon.py
     # this function is run every second for SAVE_DATA_SECONDS times after data is saved (sleep with callback)
     # the sleep_second argument is the current sleep second (seconds are counted from 0)
-    # this function is void - return is not needed
-    return
+
+    pass
 
 _arch_triggered=False # trigger archive once
 def arch_trigger(last_archive_time, now_time): # batterymon-arch.py
