@@ -1,29 +1,28 @@
-import subprocess
-import os
-import json
 import sys
+import os
+import subprocess
+import json
 import time
 import shutil
-
 from . import batterymon_helpers
 
 # settings - CUSTOM_LOG_PARAMS
-def _custom_log_params(name, value):
-    # this is a function for CUSTOM_LOG_PARAMS
-    # it allows you to add external values to the log
-    # e.g. from a thermometer, and log the ambient temperature
-    # the name argument is the name of the parameter
-    # and the value is the value of the parameter
-    # read from get_bms_json_data or None (you can create wrapper functions)
-    # this function must return some value so that batterymon.py writes it to the log
-
-    #if name == "ExternalTemperature":
-    #    return 25
-
-    #if name == "Voltage": # wrapper functions
-    #    return value*100
-
-    return "_custom_log_params_NA_"
+#def _custom_log_params(name, value):
+#    # this is a function for CUSTOM_LOG_PARAMS
+#    # it allows you to add external values to the log
+#    # e.g. from a thermometer, and log the ambient temperature
+#    # the name argument is the name of the parameter
+#    # and the value is the value of the parameter
+#    # read from get_bms_json_data or None (you can create wrapper functions)
+#    # this function must return some value so that batterymon.py writes it to the log
+#
+#    if name == "ExternalTemperature":
+#        return 25
+#
+#    if name == "Voltage": # wrapper functions
+#        return value*100
+#
+#    return "_custom_log_params_NA_"
 
 # settings
 GET_BMS_JSON_DATA_MULTIPROCESS=False # start reading parameters of all devices in parallel (at the same time), batterymon.py
@@ -97,31 +96,28 @@ FSCK_LOG=WORK_DIR+"/fsck.log" # batterymon-fsck.py
 GPIO_LED_IND=WORK_DIR+"/GPIO_LED_ON" # gpio drivers
 GPIO_LED_B_IND=WORK_DIR+"/GPIO_LED_B_ON" # gpio drivers
 GPIO_BUTT_SW=WORK_DIR+"/GPIO_BUTT_ON" # gpio drivers
+JBDTOOL_PATH=os.path.dirname(os.path.realpath(sys.argv[0]))+"/jbdtool/jbdtool" # get_bms_json_data()
 
 # settings - helpers
-def _do_rsync(): # umount_arch()
-    if ARCH_MNT_BACKUP is None:
+def _do_rsync(arch_mnt, arch_mnt_backup): # umount_arch()
+    if arch_mnt_backup is None:
         return
 
     os.sync()
 
     # batterymon-fsck.py
-    process=subprocess.Popen(["sudo", os.path.dirname(os.path.realpath(sys.argv[0]))+"/batterymon-fsck.py", ARCH_MNT_BACKUP])
-    if process.wait() > 2:
+    if subprocess.run(["sudo", os.path.dirname(os.path.realpath(sys.argv[0]))+"/batterymon-fsck.py", arch_mnt_backup]).returncode > 2:
         return 1
 
-    process=subprocess.Popen(["mount", ARCH_MNT_BACKUP])
-    if process.wait() != 0:
+    if subprocess.run(["mount", arch_mnt_backup]).returncode != 0:
         return 1
 
-    subprocess.run(["rsync", "-a", "--delete", "--ignore-existing", ARCH_MNT+"/", ARCH_MNT_BACKUP])
+    subprocess.run(["rsync", "-a", "--delete", "--ignore-existing", arch_mnt+"/", arch_mnt_backup])
 
-    process=subprocess.Popen(["umount", ARCH_MNT_BACKUP])
-
-    return process.wait()
+    return subprocess.run(["umount", arch_mnt_backup]).returncode
 
 # settings - functions
-def get_bms_json_data(device): # batterymon.py
+def get_bms_json_data(device, jbdtool_path=JBDTOOL_PATH): # batterymon.py
     # define how to read data from BMS
 
     json_data=b"<no data>"
@@ -129,7 +125,7 @@ def get_bms_json_data(device): # batterymon.py
     try:
         json_data=subprocess.check_output(
             [
-                os.path.dirname(os.path.realpath(sys.argv[0]))+"/jbdtool/jbdtool",
+                jbdtool_path,
                 "-t", device,
                 "-j"
             ],
@@ -171,12 +167,16 @@ def pre_log(device, data): # batterymon.py
     # this function will not be run if get_bms_json_data throws an exception
     pass
 
-def post_log(device, data): # batterymon.py
+def post_log( # batterymon.py
+    device, data,
+    cell_diff_label="CellDiff"
+):
     # execute after writing data to the log (light up the GPIO_LED_B)
     # this function will not be run if get_bms_json_data throws an exception
+    # if you want to override this function, you can omit the cell_diff_label argument
 
     batterymon_gpio=batterymon_helpers.gpio()
-    cell_diff=data.get("CellDiff", 0)
+    cell_diff=data.get(cell_diff_label, 0)
 
     if not cell_diff:
         return
@@ -209,15 +209,55 @@ def block_archive(archive_type): # batterymon-arch.py
 
     return False
 
-def mount_arch(): # batterymon-arch.py
+def umount_arch( # batterymon-arch.py
+    do_rsync=True,
+    fsck_log=FSCK_LOG, arch_mnt=ARCH_MNT, arch_log_dir=ARCH_LOG_DIR, arch_mnt_backup=ARCH_MNT_BACKUP
+):
+    # a function that unmounts the disk containing the archive
+    # if you want to override this function, you can omit all arguments
+
+    if not os.path.ismount(arch_mnt):
+        return 0
+
+    if do_rsync:
+        _do_rsync(arch_mnt, arch_mnt_backup)
+
+    # batterymon-fsck.py
+    if do_rsync:
+        fsck_log_basename=os.path.basename(fsck_log)
+
+        batterymon_helpers.merge_file(
+            fsck_log,
+            arch_log_dir+"/"+fsck_log_basename
+        )
+
+        batterymon_helpers.gzip_file_if_big(arch_log_dir+"/"+fsck_log_basename)
+
+    os.sync()
+
+    for i in range(300):
+        process_result=subprocess.run(["umount", arch_mnt]).returncode
+
+        if process_result == 0:
+            return 0
+
+        time.sleep(1)
+
+    return process_result
+
+def mount_arch( # batterymon-arch.py
+    umount_arch_function=umount_arch,
+    arch_free_space=5242880, # 5MB
+    fsck_log=FSCK_LOG, arch_mnt=ARCH_MNT,
+    arch_dir=ARCH_DIR, arch_journal_dir=ARCH_JOURNAL_DIR, arch_log_dir=ARCH_LOG_DIR
+):
     # a function that mounts the disk containing the archive
+    # if you want to override this function, you can omit all arguments
 
     batterymon_gpio=batterymon_helpers.gpio()
 
     while True:
-        process=subprocess.Popen(["mountpoint", "-q", ARCH_MNT])
-
-        if process.wait() != 0:
+        if not os.path.ismount(arch_mnt):
             break
 
         if os.getenv("BATTERYMON_DEBUG", "").lower() == "true":
@@ -227,60 +267,31 @@ def mount_arch(): # batterymon-arch.py
 
     # batterymon-fsck.py
     batterymon_gpio.led_b(False)
-    open(FSCK_LOG, "w").close()
-    process=subprocess.Popen(["sudo", os.path.dirname(os.path.realpath(sys.argv[0]))+"/batterymon-fsck.py"])
-    if process.wait() > 2: # EMERGENCY!!!
+    if not os.path.exists(fsck_log):
+        open(fsck_log, "w").close()
+    if subprocess.run(["sudo", os.path.dirname(os.path.realpath(sys.argv[0]))+"/batterymon-fsck.py"]).returncode > 2: # EMERGENCY!!!
         batterymon_gpio.led_b(True)
         return 1
 
-    process=subprocess.Popen(["mount", ARCH_MNT])
-    if process.wait() != 0:
+    if subprocess.run(["mount", arch_mnt]).returncode != 0:
         return 1
 
     # reject mounting if disk is full
-    if shutil.disk_usage(ARCH_MNT).free < 5242880: # 5MB
-        umount_arch(False)
-        return 1
-
-    if not os.path.exists(ARCH_DIR):
-        os.makedirs(ARCH_DIR)
-    if not os.path.exists(ARCH_JOURNAL_DIR):
-        os.makedirs(ARCH_JOURNAL_DIR)
-    if not os.path.exists(ARCH_LOG_DIR):
-        os.makedirs(ARCH_LOG_DIR)
-
-    return 0
-
-def umount_arch(do_rsync=True): # batterymon-arch.py
-    # a function that unmounts the disk containing the archive
-
-    process=subprocess.Popen(["mountpoint", "-q", ARCH_MNT])
-    if process.wait() != 0:
-        return 0
-
-    if do_rsync:
-        _do_rsync()
-
-    # batterymon-fsck.py
-    if do_rsync:
-        fsck_log_basename=os.path.basename(FSCK_LOG)
-
-        batterymon_helpers.merge_file(
-            FSCK_LOG,
-            ARCH_LOG_DIR+"/"+fsck_log_basename
+    if shutil.disk_usage(arch_mnt).free < arch_free_space:
+        umount_arch_function(
+            False,
+            fsck_log=fsck_log,
+            arch_mnt=arch_mnt,
+            arch_log_dir=arch_log_dir
         )
 
-        batterymon_helpers.gzip_file_if_big(ARCH_LOG_DIR+"/"+fsck_log_basename)
+        return 1
 
-    os.sync()
+    if not os.path.exists(arch_dir):
+        os.makedirs(arch_dir)
+    if not os.path.exists(arch_journal_dir):
+        os.makedirs(arch_journal_dir)
+    if not os.path.exists(arch_log_dir):
+        os.makedirs(arch_log_dir)
 
-    for i in range(300):
-        process=subprocess.Popen(["umount", ARCH_MNT])
-        process_result=process.wait()
-
-        if process_result == 0:
-            return 0
-
-        time.sleep(1)
-
-    return process_result
+    return 0

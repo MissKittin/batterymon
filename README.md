@@ -48,15 +48,19 @@ def _custom_log_params(name, value):
 
     return "_custom_log_params_NA_"
 
-# enter your own settings
-DEVICES=[
+# enter your own settings (preserve object references for lists and dictionaries)
+DEVICES.extend([
     "bt:00:11:22:33:44:55",
     "bt:01:23:45:67:89:AB"
-]
-LOG_PARAMS_IGNORE={}
-CUSTOM_LOG_PARAMS={
+])
+LOG_PARAMS.extend([
+    "ExternalTemperature"
+])
+CUSTOM_LOG_PARAMS.update({
     "ExternalTemperature": _custom_log_params
-}
+})
+
+GET_BMS_JSON_DATA_MULTIPROCESS=True
 
 # overwrite function
 def on_read_lock():
@@ -175,14 +179,14 @@ LOG_PARAMS=[
     "CellAvg",
     "FET"
 ]
-DEVICES=[
+DEVICES.extend([
     "bt:00:11:22:33:44:55",
     "bt:01:23:45:67:89:AB",
     "vdev:name"
-]
-LOG_PARAMS_IGNORE={
+])
+LOG_PARAMS_IGNORE.update({
     "vdev:name": LOG_PARAMS
-}
+})
 
 def get_bms_json_data(device):
     if device.startswith("vdev:"):
@@ -220,7 +224,9 @@ def post_log(device, data):
         pass
 
 # you can optionally exclude the device from the DUMP_RAW_JSON function
-DUMP_RAW_JSON_IGNORE=["vdev:name"]
+DUMP_RAW_JSON_IGNORE.extend([
+    "vdev:name"
+])
 ```
 
 ### Scripts
@@ -292,3 +298,4 @@ For the `batterymon-arch.py` to work, create the directories `/tmp/batterymon-mn
 /tmp/batterymon-mnt /media/batterymon auto user,bind 0 0
 /tmp/batterymon-mnt-backup /media/batterymon-backup auto user,bind 0 0
 ```
+**Warning:** `mount_arch` and `umount_arch` use `os.path.ismount`. The `ismount` function cannot reliably detect bind mounts within the same filesystem - please keep this in mind.
