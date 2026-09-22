@@ -7,7 +7,7 @@ Tested on Raspberry Pi Zero W and AZO Digital LP12-150 LiFePO4 12V 150Ah
 	or other computer, GPIO is optional
 * SD card for OS
 * thumb drive or SD card for collected data  
-	two pieces if you want to have backup via `rsync`
+	two pieces if you want to have backup (see `batterymon_plugins` in the `batterymon-extras` repository)
 * 2x LED, 2 resistors  
 	requires GPIO
 * button  
@@ -19,8 +19,6 @@ Tested on Raspberry Pi Zero W and AZO Digital LP12-150 LiFePO4 12V 150Ah
 * sudo
 * bluez  
 	if you use Bluetooth
-* rsync  
-	if you want to have backup
 
 ### Optional components
 * `RPi.GPIO` package  
@@ -29,8 +27,7 @@ Tested on Raspberry Pi Zero W and AZO Digital LP12-150 LiFePO4 12V 150Ah
 ### OS configuration
 * `batterymon` user and group
 * user `batterymon` added to appropriate groups
-* an `/etc/fstab` entry that allows `batterymon` to mount `/media/batterymon`  
-	and `/media/batterymon-backup` if you want to have backup
+* an `/etc/fstab` entry that allows `batterymon` to mount `/media/batterymon`
 * entry in `/etc/sudoers` allowing `batterymon-fsck.py` with the `NOPASSWD` option
 
 ### Setup
@@ -153,7 +150,6 @@ When transferring a file, a SHA512 checksum is generated - you can check whether
 Additionally, if one of the batteries requires attention (e.g. the cells need to be balanced) or there is a problem with the external disk, a second LED will light up.  
 External memory is designed to protect data from loss due to power outages. Therefore, current data is stored in tmpfs, and the memory containing the operating system is mounted in read-only mode.  
 Therefore, there's no need to turn off the system. Simply unplug the cable (or turn off the DC-AC inverter unless the LED is on - then wait until it turns off).  
-You can also add a second drive - it will serve as a backup in case your primary drive fails. This option is enabled by default – set `ARCH_MNT_BACKUP` to `None` to disable this feature.  
 `batterymon-fsck.py` is run from `batterymon-arch.py` via `sudo` - the filesystem is checked before each external storage mount.  
 In this configuration, you can also check if the AC side is working by pinging the SBC. If it doesn't respond, the inverter is off (you've used up all the battery power, the battery fuse has blown or the inverter is burned out).
 
@@ -293,9 +289,8 @@ for log_line in logs:
 The formats are better described in the files `batterymon_lib/batterymon_helpers_parse_log_line.py` and `batterymon_lib/batterymon_helpers_extra.py`.
 
 ### Debugging
-For the `batterymon-arch.py` to work, create the directories `/tmp/batterymon-mnt`, `/tmp/batterymon-mnt-backup` and add to `/etc/fstab`:
+For the `batterymon-arch.py` to work, create the `/tmp/batterymon-mnt` directory and add to `/etc/fstab`:
 ```
 /tmp/batterymon-mnt /media/batterymon auto user,bind 0 0
-/tmp/batterymon-mnt-backup /media/batterymon-backup auto user,bind 0 0
 ```
 **Warning:** `mount_arch` and `umount_arch` use `os.path.ismount`. The `ismount` function cannot reliably detect bind mounts within the same filesystem - please keep this in mind.
