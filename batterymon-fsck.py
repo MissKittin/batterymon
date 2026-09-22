@@ -54,13 +54,15 @@ def write_log(message, newline=True):
 
         log_file.flush()
 
-mountpoint=batterymon_common.ARCH_MNT
-
-if len(sys.argv) > 1 and sys.argv[1] == batterymon_common.ARCH_MNT_BACKUP:
-    mountpoint=batterymon_common.ARCH_MNT_BACKUP
+mountpoint=sys.argv[1] if len(sys.argv) > 1 else batterymon_common.ARCH_MNT
 
 try:
     write_log("=== FSCK START "+mountpoint+" ===")
+
+    if mountpoint not in batterymon_common.FSCK_ALLOWED_MOUNTPOINTS:
+        write_log("WRAPPER ERROR: "+mountpoint+" is not defined in FSCK_ALLOWED_MOUNTPOINTS")
+        sys.exit(8)
+
     arch_dev=fstab().get(mountpoint)
 
     if not arch_dev:

@@ -93,6 +93,7 @@ READ_LOCK_FILE=WORK_DIR+"/bmsread.lock" # if you create this file, you will bloc
 ARCH_LOG=WORK_DIR+"/arch-log.txt" # batterymon-arch.py
 ARCH_ERR=WORK_DIR+"/arch-err.txt" # batterymon-arch.py
 FSCK_LOG=WORK_DIR+"/fsck.log" # batterymon-fsck.py
+FSCK_ALLOWED_MOUNTPOINTS=[ARCH_MNT, ARCH_MNT_BACKUP] # allow checking only these mountpoints in batterymon-fsck.py
 GPIO_LED_IND=WORK_DIR+"/GPIO_LED_ON" # gpio drivers
 GPIO_LED_B_IND=WORK_DIR+"/GPIO_LED_B_ON" # gpio drivers
 GPIO_BUTT_SW=WORK_DIR+"/GPIO_BUTT_ON" # gpio drivers
